@@ -1,0 +1,50 @@
+---
+title: "Neurala Nätverk i R med TensorFlow"
+author: "Torbjörn Sjöberg"
+date: "1/19/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+I den här övningen kommer vi att använda [TensorFlow](https://www.tensorflow.org/), ett av de mest populära paketen för att bygga neurala nätverk.
+
+## Installation
+TensorFlow är ett Open Source paket som är skapat av Google och är skrivet i en kombination av Python, C++ och CUDA. 
+Det är alltså inte som andra R paket som är skrivna i R och kräver lite extra installation. 
+
+Notera att i den här övningen så har en Mac (Unix) använts till installation, för att installera på windows krävs en installation av
+[Anaconda](https://www.anaconda.com/). På [Den här sidan](https://tensorflow.rstudio.com/installation/) finns en komplett installationsguide TensorFlow i R.
+
+
+```{r install_tf, eval=FALSE}
+# Installera R paket
+install.packages('tensorflow')
+
+# läsa in paketet
+library(tensorflow)
+
+# Installera det R oberoende TensorFlow programmet pä din dator
+install_tensorflow()
+
+```
+
+```{r test_tensorflow}
+# läsa in paketet
+library(tensorflow)
+
+# testa att installationen fungerat korrekt
+tf$constant(1)
+```
+
+Om installationen har fungerat korrekt så ska outputen vara ´tf.Tensor(1.0, shape=(), dtype=float32)´
+
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
