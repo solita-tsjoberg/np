@@ -7,14 +7,15 @@ output: html_document
 
 ```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.align='center')
 ```
 
 I den här övningen kommer vi att använda [TensorFlow](https://www.tensorflow.org/), ett av de mest populära paketen för att bygga neurala nätverk.
+Övningen är tönkt för att visa up snabbt hur enkelt det är att bygga sina egna neurala nätverk. För mer exempel så rekommenderas [RStudios TensorFlow tutorials](https://tensorflow.rstudio.com/tutorials/).
 
 ## Installation
-TensorFlow är ett Open Source paket som är skapat av Google och är skrivet i en kombination av Python, C++ och CUDA. 
-Det är alltså inte som andra R paket som är skrivna i R och kräver lite extra installation. 
+TensorFlow är ett Open Source paket som är skapat av Google och är skrivet i en kombination av Python, C++ och CUDA.
+Det är alltså inte som andra R paket som är skrivna i R och kräver lite extra installation.
 
 Notera att i den här övningen så har en Mac (Unix) använts till installation, för att installera på windows krävs en installation av
 [Anaconda](https://www.anaconda.com/). På [Den här sidan](https://tensorflow.rstudio.com/installation/) finns en komplett installationsguide TensorFlow i R.
@@ -27,24 +28,105 @@ install.packages('tensorflow')
 # läsa in paketet
 library(tensorflow)
 
-# Installera det R oberoende TensorFlow programmet pä din dator
+# Installera det R-oberoende TensorFlow programmet på din dator
 install_tensorflow()
 
 ```
 
-```{r test_tensorflow}
-# läsa in paketet
+```{r load, echo=FALSE, eval=TRUE}
+# för att se till att tensorflow laddas när vi knittar markdown filen.
 library(tensorflow)
+```
 
+```{r test_tensorflow}
 # testa att installationen fungerat korrekt
 tf$constant(1)
 ```
 
-Om installationen har fungerat korrekt så ska outputen vara ´tf.Tensor(1.0, shape=(), dtype=float32)´
+Om installationen har fungerat korrekt så ska outputen vara `tf.Tensor(1.0, shape=(), dtype=float32)´.
 
+## Data Prep
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+Innan vi bygger vårt neurala nåtverk behöver vi data att jobba med! Keras, en frontend till TensorFlow, kommer packeterat med några exempel-dataset som vi kan använda.
+Ett av dem ör MNIST datasetet som är en samling handskrivna bokstäver och är ett av de mest klassiska dataseten för att testa på ML.
+
+```{r load_packages, include=FALSE}
+#Vi behöver ladda våra paket innan vi använder dem
+
+library(tidyverse) #Laddar in många av de vanliga R paketen
+library(keras) #Frontend till TensorFlow.
+library(reshape2) #Används för att enklare visa upp vår data
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Vi laddar in och skapar sedan4 stycken arrayer (listor):
+- `train_images` - Vår träningsdata (X), 60 000 observationer med 28x28 svartvita bilder med siffrorna
+- `train_labels`, Våra träningsetiketter (Y) som berättar vilken siffra träningsdatat ska representera
+- `test_images`, 10 000 träningsbilder för att testa modellen
+- `test_labels`, 10 000 etiketter för att testa modelle
+
+```{r load_data}
+mnist <- dataset_mnist()
+
+# Dataseten från keras kommer i vektorer som indelade i test och train-set.
+# Vi skapar inte ett valideringsset här utan det görs automatiskt när vi tränar modellen senare.
+train_images <- mnist$train$x / 255
+train_labels <- mnist$train$y
+test_images <- mnist$test$x / 255
+test_labels <- mnist$test$y
+```
+
+```{r helper_functions, include=FALSE}
+# Hjälpfunktion för att rotera matriser 90 grader
+# Datan kommer i ett 90 grader roterat format, vilket inte spelar någor roll för NN
+# Men för våra visualieringar
+rotate <- function(x) t(apply(x, 2, rev))
+
+# Det här är en hjälpfunktion för att visa upp hur mnist datasetet ser ut
+plot_mnist <- function(mnist_matrix) {
+  mnist_matrix_rot <- mnist_matrix %>%
+    rotate()
+  image(1:28, 1:28, mnist_matrix_rot, col = gray((0:255)/255))
+}
+```
+För att se hur datan ser ut så kan man köra code chunken här under:
+
+```{r display_random_mnist}
+number_to_display <- sample(1:dim(train_images)[1], 1) #Sampla siffra mellan 1 och antalet träningsexempel
+cat('Bild nummer', number_to_display, 'som föreställer siffran', train_labels[number_to_display], ':\n\n')
+```
+```{r echo=FALSE}
+plot_mnist(train_images[number_to_display, ,])
+```
+
+Nu har vi nästan kommit hela vägen fram till att börja bygga våra neurala nätverk, men vi behöver först forma om datan lite till för att
+passa formaten som de neurala nätverken kräver.
+
+Det gör vi genom att göra om våra labels till en one hot encoding av våra labels, och platta ut vatriser till rader
+
+```{r reshape_data}
+# One hot encoding
+num_classes = 10
+train_y_cat <- train_y %>% to_categorical(num_classes)
+test_y_cat <- test_y %>% to_categorical(num_classes)
+
+# Flatten matrices
+train_images_flat <- array_reshape(train_images, c(nrow(train_images), 784))
+test_images_flat <- array_reshape(test_images, c(nrow(images_test), 784))
+
+```
+
+
+##Bygga DNN
+
+Nu är vi redo att bygga vårt NN nätverk! 
+Vi använder här en `sequential` keras modell, vilket betyder att vi definierar modellen ett lager i taget.
+
+```{r}
+model_nn <- keras_model_sequential() %>% # Initiera modellen
+    # Vårt input lager, kräver att vi har rätt 
+    layer
+```
+
+
+
+
