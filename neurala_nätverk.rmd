@@ -173,16 +173,60 @@ model_nn %>%
     metrics = c('accuracy', metric_precision(), metric_recall()) #
   )
 
+```
+
+Sedan kan vi starta träningen av modellen. Notera här parametern `validation_split`,
+den skapar det valideringsset som används vi kan använda för att jämföra olika
+architekturer av NNs eller andra modeller.
+
+I den här implementationen så väljs valideringssetet från slutet av träningsetet.
+
+### Träna nätverket
+
+Nu är det bara att köra vår modell med fit funktionen, under tiden den kör så kan vi se hur
+vår loss och våra mätetal/metrics utvecklas under träningen.
+```{r}
 history <- model_nn %>%
   fit(
     x = train_images_flat,
     y = train_labels_cat,
     epochs = 30, # Varje datapunkt tränas på 30 ggr
     batch_size = 128, # 128 datapunkter betygsätts tillsammans mellan uppdateringar
-    validation_split = 0.1
+    validation_split = 0.2,
+    callbacks = callback_tensorboard('logs/run_a')
   )
 ```
 
+```{r echo=FALSE}
+history %>% plot()
+history
+```
+
+### Slutgiltig evaluering och stickprov
+Nu är modellen tränad och om vi är nöjda med vår performance (Med en validation accuracy på 95-96 % är det ändå ganska bra!) så kan vi titta på
+om det verkar ha generaliserats till vårt test-dataset.
+
 ```{r}
-score <- model_nn %>% evaluate(test_images_flat, test_labels_cat)
+score <- model_nn %>% evaluate(test_images_flat, test_labels_cat, callbacks = callback_tensorboard('logs/run_a'))
+score
+
+# skapa predictioner på test data setet
+predictions <- model_nn %>% predict(test_images_flat)
+colnames(predictions) <- 0:9
+
+# Göra siffror från one hot enc
+predictions_num <- predictions %>%
+  as_tibble() %>%
+  mutate(pred_num=max.col(predictions)-1) %>%
+  select(pred_num)
+```
+
+Fortfarande kring ca 95 %!
+Hur ser det ut om vi tar stickprov i vårt testset?
+```{r}
+rand_num <- sample(1:nrow(test_labels), size = 1)
+cat('test bild nummer', rand_num, 'som föreställer siffran', test_labels[rand_num], ':\n\n')
+cat('och modellen predicerar', predictions_num[[rand_num, 1]])
+
+plot_mnist(test_images[rand_num, ,])
 ```
