@@ -168,7 +168,8 @@ Sedan behöver vi "kompilera" modellen och där specificera vår loss funktion, 
 model_nn %>%
   compile(
     loss = 'categorical_crossentropy', #Motsvarar binary cross entropy för multi-class
-    optimizer = optimizer_adam(), # 'vanlig' stochastic gradient descent
+    optimizer = optimizer_adam(), # Här använder vi en lite mer avancerad optimerare än
+                                  # bara SGD eftersom träningen går mycket snabbare.
     metrics = c('accuracy', metric_precision(), metric_recall()) #
   )
 
