@@ -106,27 +106,82 @@ Det gör vi genom att göra om våra labels till en one hot encoding av våra la
 ```{r reshape_data}
 # One hot encoding
 num_classes = 10
-train_y_cat <- train_y %>% to_categorical(num_classes)
-test_y_cat <- test_y %>% to_categorical(num_classes)
+train_labels_cat <- train_labels %>% to_categorical(num_classes)
+test_labels_cat <- test_labels %>% to_categorical(num_classes)
 
 # Flatten matrices
 train_images_flat <- array_reshape(train_images, c(nrow(train_images), 784))
-test_images_flat <- array_reshape(test_images, c(nrow(images_test), 784))
+test_images_flat <- array_reshape(test_images, c(nrow(test_images), 784))
+
+# För säkerhets skull kan vi slumpa ordningen på vårt dataset
+set.seed(123)
+new_order <- sample(nrow(train_images_flat))
+train_images_flat <- train_images_flat[new_order, ]
+train_labels_cat <- train_labels_cat[new_order, ]
 
 ```
 
 
-##Bygga DNN
+### Bygga DNN
 
-Nu är vi redo att bygga vårt NN nätverk! 
+Nu är vi redo att bygga vårt neurala nätverk!
 Vi använder här en `sequential` keras modell, vilket betyder att vi definierar modellen ett lager i taget.
 
 ```{r}
-model_nn <- keras_model_sequential() %>% # Initiera modellen
-    # Vårt input lager, kräver att vi har rätt 
-    layer
+
+model_nn <-
+  # Initiera modellen
+  keras_model_sequential() %>%
+
+    # Vårt första hidden layer, kräver att vi har rätt input dimensioner
+    layer_dense(
+      units = 16, #Antal noder
+      input_shape = ncol(train_images_flat),
+      activation = 'relu' #Aktiveringsfunktion
+    ) %>%
+
+    # Ett till lager
+    layer_dense(
+      units = 16, #Antal noder
+      activation = 'relu' #Aktiveringsfunktion
+    ) %>%
+
+    # Output lager
+    layer_dense(
+      units = 10, # lika många som vi har kategorier
+      activation = 'softmax' #Motsvarar Logit, för flera klasser
+    )
 ```
 
+För att se hur modellen ser ut kan vi använda `summary()`.
+Här kan vi se att vi i det här relativt enkla nätverket med 2 gömda lager med 16 noder var, har 13 000 parametrar att jobba med!
 
+Antalet parametrar växer fort i NN!
 
+```{r}
+model_nn %>% summary()
+```
 
+Sedan behöver vi "kompilera" modellen och där specificera vår loss funktion, optimeringsalgorims, och mätetal.
+
+```{r}
+model_nn %>%
+  compile(
+    loss = 'categorical_crossentropy', #Motsvarar binary cross entropy för multi-class
+    optimizer = optimizer_adam(), # 'vanlig' stochastic gradient descent
+    metrics = c('accuracy', metric_precision(), metric_recall()) #
+  )
+
+history <- model_nn %>%
+  fit(
+    x = train_images_flat,
+    y = train_labels_cat,
+    epochs = 30, # Varje datapunkt tränas på 30 ggr
+    batch_size = 128, # 128 datapunkter betygsätts tillsammans mellan uppdateringar
+    validation_split = 0.1
+  )
+```
+
+```{r}
+score <- model_nn %>% evaluate(test_images_flat, test_labels_cat)
+```
