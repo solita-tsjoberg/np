@@ -217,16 +217,35 @@ colnames(predictions) <- 0:9
 # Göra siffror från one hot enc
 predictions_num <- predictions %>%
   as_tibble() %>%
-  mutate(pred_num=max.col(predictions)-1) %>%
-  select(pred_num)
+  mutate(
+    pred_num=max.col(predictions)-1, 
+    max_prediction = do.call(pmax, (.))
+  ) %>%
+  select(pred_num, max_prediction)
+
+# Kombinera Predictions med våra test labels
+test_labels_real_pred <- tibble(image_index = 1:nrow(test_labels), test_labels, predictions_num)
 ```
 
 Fortfarande kring ca 95 %!
 Hur ser det ut om vi tar stickprov i vårt testset?
-```{r}
-rand_num <- sample(1:nrow(test_labels), size = 1)
-cat('test bild nummer', rand_num, 'som föreställer siffran', test_labels[rand_num], ':\n\n')
-cat('och modellen predicerar', predictions_num[[rand_num, 1]])
 
+```{r}
+rand_num <- sample(1:nrow(test_labels_real_pred), size = 1)
+cat('Testbild nummer', rand_num, 'som föreställer siffran', test_labels_real_pred$test_labels[rand_num], ':\n')
+cat(
+  'får en predicerad siffra:',
+  test_labels_real_pred$pred_num[rand_num],
+  'med säkerhet:',
+  test_labels_real_pred$max_prediction[rand_num]
+)
+ 
 plot_mnist(test_images[rand_num, ,])
 ```
+
+Och i tabellformat:
+```{r}
+# 10 slumpmässigt valda testblider, deras sanna och predicerade labels, och den predicerade säkerheten det neurala nätverket hade.
+test_labels_real_pred %>% slice_sample(n = 10)
+```
+
