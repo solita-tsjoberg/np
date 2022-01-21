@@ -218,7 +218,7 @@ colnames(predictions) <- 0:9
 predictions_num <- predictions %>%
   as_tibble() %>%
   mutate(
-    pred_num=max.col(predictions)-1, 
+    pred_num=max.col(predictions)-1,
     max_prediction = do.call(pmax, (.))
   ) %>%
   select(pred_num, max_prediction)
@@ -239,7 +239,7 @@ cat(
   'med säkerhet:',
   test_labels_real_pred$max_prediction[rand_num]
 )
- 
+
 plot_mnist(test_images[rand_num, ,])
 ```
 
@@ -249,3 +249,17 @@ Och i tabellformat:
 test_labels_real_pred %>% slice_sample(n = 10)
 ```
 
+För att det är intressant kan vi också titta på några av de exemplen där modellen misslyckades.
+
+```{r}
+random_failures <- test_labels_real_pred %>%
+  filter(test_labels != pred_num) %>%
+  slice_sample(n = 5)
+
+random_failures
+
+random_failures %>%
+  head(1) %>%
+  pull(image_index) %>%
+  { plot_mnist(test_images[., ,]) }
+```
