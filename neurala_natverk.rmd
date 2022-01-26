@@ -65,14 +65,15 @@ Vi laddar in och skapar sedan4 stycken arrayer (listor):
 - `test_labels`, 10 000 etiketter för att testa modelle
 
 ```{r load_data}
-mnist <- dataset_mnist()
+fashion <- dataset_fashion_mnist()
+fashion_labels <- read_csv('data/fashion_labels.csv')
 
 # Dataseten från keras kommer i vektorer som indelade i test och train-set.
 # Vi skapar inte ett valideringsset här utan det görs automatiskt när vi tränar modellen senare.
-train_images <- mnist$train$x / 255
-train_labels <- mnist$train$y
-test_images <- mnist$test$x / 255
-test_labels <- mnist$test$y
+train_images <- fashion$train$x / 255
+train_labels <- fashion$train$y
+test_images <- fashion$test$x / 255
+test_labels <- fashion$test$y
 ```
 
 ```{r helper_functions, include=FALSE}
@@ -90,9 +91,18 @@ plot_mnist <- function(mnist_matrix) {
 ```
 För att se hur datan ser ut så kan man köra code chunken här under:
 
-```{r display_random_mnist}
+```{r echo = FALSE, display_random_mnist}
 number_to_display <- sample(1:dim(train_images)[1], 1) #Sampla siffra mellan 1 och antalet träningsexempel
-cat('Bild nummer', number_to_display, 'som föreställer siffran', train_labels[number_to_display], ':\n\n')
+
+#Skriv ut en förklaring
+cat(
+  'Bild nummer', number_to_display,
+  'som föreställer en/ett',
+  fashion_labels %>%
+    filter(lab == train_labels[number_to_display]) %>%
+    pull(description),
+  ':\n\n'
+)
 ```
 ```{r echo=FALSE}
 plot_mnist(train_images[number_to_display, ,])
@@ -135,14 +145,20 @@ model_nn <-
 
     # Vårt första hidden layer, kräver att vi har rätt input dimensioner
     layer_dense(
-      units = 16, #Antal noder
+      units = 64, #Antal noder
       input_shape = ncol(train_images_flat),
       activation = 'relu' #Aktiveringsfunktion
     ) %>%
 
     # Ett till lager
     layer_dense(
-      units = 16, #Antal noder
+      units = 32, #Antal noder
+      activation = 'relu' #Aktiveringsfunktion
+    ) %>%
+
+    # Ett till lager
+    layer_dense(
+      units = 32, #Antal noder
       activation = 'relu' #Aktiveringsfunktion
     ) %>%
 
@@ -224,7 +240,12 @@ predictions_num <- predictions %>%
   select(pred_num, max_prediction)
 
 # Kombinera Predictions med våra test labels
-test_labels_real_pred <- tibble(image_index = 1:nrow(test_labels), test_labels, predictions_num)
+test_labels_real_pred <- tibble(image_index = 1:nrow(test_labels), test_labels, predictions_num) %>%
+  left_join(fashion_labels, by = c('test_labels' = 'lab')) %>%
+  left_join(fashion_labels, by = c('pred_num' = 'lab')) %>%
+  rename(real_description = description.x, pred_description = description.y)
+
+test_labels_real_pred
 ```
 
 Fortfarande kring ca 95 %!
@@ -232,10 +253,13 @@ Hur ser det ut om vi tar stickprov i vårt testset?
 
 ```{r}
 rand_num <- sample(1:nrow(test_labels_real_pred), size = 1)
-cat('Testbild nummer', rand_num, 'som föreställer siffran', test_labels_real_pred$test_labels[rand_num], ':\n')
 cat(
-  'får en predicerad siffra:',
-  test_labels_real_pred$pred_num[rand_num],
+  'Testbild nummer',
+  rand_num,
+  'som föreställer en/ett',
+  test_labels_real_pred$real_description[rand_num], '\n',
+  'får en predicerad typ:',
+  test_labels_real_pred$pred_description[rand_num],
   'med säkerhet:',
   test_labels_real_pred$max_prediction[rand_num]
 )
