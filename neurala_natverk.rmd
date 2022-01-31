@@ -48,7 +48,11 @@ Om installationen har fungerat korrekt så ska outputen vara `tf.Tensor(1.0, sha
 ## Data Prep
 
 Innan vi bygger vårt neurala nåtverk behöver vi data att jobba med! Keras, en frontend till TensorFlow, kommer packeterat med några exempel-dataset som vi kan använda.
-Ett av dem ör MNIST datasetet som är en samling handskrivna bokstäver och är ett av de mest klassiska dataseten för att testa på ML.
+Ett av dem är fashion_MNIST som är en av de mest använda enklare dataseten för att testa maskinlärningsmodeller.
+
+Det är ett dataset som är skapat av Zalando som ett drop-in replacement för det (nog) mest klassiska datasetet, MNIST, för att det datasetet är för enkelt att klassificera.
+För att få lite mer bakrund så kan man läsa om det på projektets [GitHub Repo](https://github.com/zalandoresearch/fashion-mnist).
+
 
 ```{r load_packages, include=FALSE}
 #Vi behöver ladda våra paket innan vi använder dem
@@ -59,20 +63,21 @@ library(reshape2) #Används för att enklare visa upp vår data
 ```
 
 Vi laddar in och skapar sedan4 stycken arrayer (listor):
-- `train_images` - Vår träningsdata (X), 60 000 observationer med 28x28 svartvita bilder med siffrorna
-- `train_labels`, Våra träningsetiketter (Y) som berättar vilken siffra träningsdatat ska representera
+- `train_images` - Vår träningsdata (X), 60 000 observationer med 28x28 svartvita bilder på kläderna
+- `train_labels`, Våra träningsetiketter (Y) som berättar vilken sorts kläder träningsdatat ska representera
 - `test_images`, 10 000 träningsbilder för att testa modellen
 - `test_labels`, 10 000 etiketter för att testa modelle
 
 ```{r load_data}
-mnist <- dataset_mnist()
+fashion <- dataset_fashion_mnist()
+fashion_labels <- read_csv('data/fashion_labels.csv')
 
 # Dataseten från keras kommer i vektorer som indelade i test och train-set.
 # Vi skapar inte ett valideringsset här utan det görs automatiskt när vi tränar modellen senare.
-train_images <- mnist$train$x / 255
-train_labels <- mnist$train$y
-test_images <- mnist$test$x / 255
-test_labels <- mnist$test$y
+train_images <- fashion$train$x / 255
+train_labels <- fashion$train$y
+test_images <- fashion$test$x / 255
+test_labels <- fashion$test$y
 ```
 
 ```{r helper_functions, include=FALSE}
@@ -90,18 +95,27 @@ plot_mnist <- function(mnist_matrix) {
 ```
 För att se hur datan ser ut så kan man köra code chunken här under:
 
-```{r display_random_mnist}
-number_to_display <- sample(1:dim(train_images)[1], 1) #Sampla siffra mellan 1 och antalet träningsexempel
-cat('Bild nummer', number_to_display, 'som föreställer siffran', train_labels[number_to_display], ':\n\n')
+```{r echo = FALSE, display_random_mnist}
+rand_num <- sample(1:dim(train_images)[1], 1) #Sampla siffra mellan 1 och antalet träningsexempel
+
+#Skriv ut en förklaring
+cat(
+  'Bild nummer', number_to_display,
+  'som föreställer en/ett',
+  fashion_labels %>%
+    filter(lab == train_labels[rand_num]) %>%
+    pull(description),
+  '\n'
+)
 ```
 ```{r echo=FALSE}
-plot_mnist(train_images[number_to_display, ,])
+plot_mnist(train_images[rand_num, ,])
 ```
 
 Nu har vi nästan kommit hela vägen fram till att börja bygga våra neurala nätverk, men vi behöver först forma om datan lite till för att
 passa formaten som de neurala nätverken kräver.
 
-Det gör vi genom att göra om våra labels till en one hot encoding av våra labels, och platta ut vatriser till rader
+Det gör vi genom att göra om våra labels till en one hot encoding av våra labels, och platta ut matriser till rader
 
 ```{r reshape_data}
 # One hot encoding
@@ -195,6 +209,10 @@ history <- model_nn %>%
     validation_split = 0.2,
     callbacks = callback_tensorboard('logs/run_a')
   )
+
+# Det är bra praxis att spara sina modeller så att man inte tränar många gånger i onödan
+model_nn %>% save_model_hdf5('models/model_nn.h5')
+
 ```
 
 ```{r echo=FALSE}
@@ -203,7 +221,7 @@ history
 ```
 
 ### Slutgiltig evaluering och stickprov
-Nu är modellen tränad och om vi är nöjda med vår performance (Med en validation accuracy på 95-96 % är det ändå ganska bra!) så kan vi titta på
+Nu är modellen tränad och om vi är nöjda med vår performance (Med en validation accuracy på 86-87 % är det ändå ganska bra!) så kan vi titta på
 om det verkar ha generaliserats till vårt test-dataset.
 
 ```{r}
@@ -224,7 +242,12 @@ predictions_num <- predictions %>%
   select(pred_num, max_prediction)
 
 # Kombinera Predictions med våra test labels
-test_labels_real_pred <- tibble(image_index = 1:nrow(test_labels), test_labels, predictions_num)
+test_labels_real_pred <- tibble(image_index = 1:nrow(test_labels), test_labels, predictions_num) %>%
+  left_join(fashion_labels, by = c('test_labels' = 'lab')) %>%
+  left_join(fashion_labels, by = c('pred_num' = 'lab')) %>%
+  rename(real_description = description.x, pred_description = description.y)
+
+test_labels_real_pred
 ```
 
 Fortfarande kring ca 95 %!
@@ -232,10 +255,13 @@ Hur ser det ut om vi tar stickprov i vårt testset?
 
 ```{r}
 rand_num <- sample(1:nrow(test_labels_real_pred), size = 1)
-cat('Testbild nummer', rand_num, 'som föreställer siffran', test_labels_real_pred$test_labels[rand_num], ':\n')
 cat(
-  'får en predicerad siffra:',
-  test_labels_real_pred$pred_num[rand_num],
+  'Testbild nummer',
+  rand_num,
+  'som föreställer en/ett',
+  test_labels_real_pred$real_description[rand_num], '\n',
+  'får en predicerad typ:',
+  test_labels_real_pred$pred_description[rand_num],
   'med säkerhet:',
   test_labels_real_pred$max_prediction[rand_num]
 )

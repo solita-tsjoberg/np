@@ -1,3 +1,4 @@
 *.html
 neurala_nätverk_files/
 logs/
+models/
