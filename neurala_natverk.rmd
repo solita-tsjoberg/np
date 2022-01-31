@@ -48,7 +48,11 @@ Om installationen har fungerat korrekt så ska outputen vara `tf.Tensor(1.0, sha
 ## Data Prep
 
 Innan vi bygger vårt neurala nåtverk behöver vi data att jobba med! Keras, en frontend till TensorFlow, kommer packeterat med några exempel-dataset som vi kan använda.
-Ett av dem ör MNIST datasetet som är en samling handskrivna bokstäver och är ett av de mest klassiska dataseten för att testa på ML.
+Ett av dem är fashion_MNIST som är en av de mest använda enklare dataseten för att testa maskinlärningsmodeller.
+
+Det är ett dataset som är skapat av Zalando som ett drop-in replacement för det (nog) mest klassiska datasetet, MNIST, för att det datasetet är för enkelt att klassificera.
+För att få lite mer bakrund så kan man läsa om det på projektets [GitHub Repo](https://github.com/zalandoresearch/fashion-mnist).
+
 
 ```{r load_packages, include=FALSE}
 #Vi behöver ladda våra paket innan vi använder dem
@@ -59,8 +63,8 @@ library(reshape2) #Används för att enklare visa upp vår data
 ```
 
 Vi laddar in och skapar sedan4 stycken arrayer (listor):
-- `train_images` - Vår träningsdata (X), 60 000 observationer med 28x28 svartvita bilder med siffrorna
-- `train_labels`, Våra träningsetiketter (Y) som berättar vilken siffra träningsdatat ska representera
+- `train_images` - Vår träningsdata (X), 60 000 observationer med 28x28 svartvita bilder på kläderna
+- `train_labels`, Våra träningsetiketter (Y) som berättar vilken sorts kläder träningsdatat ska representera
 - `test_images`, 10 000 träningsbilder för att testa modellen
 - `test_labels`, 10 000 etiketter för att testa modelle
 
@@ -92,26 +96,26 @@ plot_mnist <- function(mnist_matrix) {
 För att se hur datan ser ut så kan man köra code chunken här under:
 
 ```{r echo = FALSE, display_random_mnist}
-number_to_display <- sample(1:dim(train_images)[1], 1) #Sampla siffra mellan 1 och antalet träningsexempel
+rand_num <- sample(1:dim(train_images)[1], 1) #Sampla siffra mellan 1 och antalet träningsexempel
 
 #Skriv ut en förklaring
 cat(
   'Bild nummer', number_to_display,
   'som föreställer en/ett',
   fashion_labels %>%
-    filter(lab == train_labels[number_to_display]) %>%
+    filter(lab == train_labels[rand_num]) %>%
     pull(description),
-  ':\n\n'
+  '\n'
 )
 ```
 ```{r echo=FALSE}
-plot_mnist(train_images[number_to_display, ,])
+plot_mnist(train_images[rand_num, ,])
 ```
 
 Nu har vi nästan kommit hela vägen fram till att börja bygga våra neurala nätverk, men vi behöver först forma om datan lite till för att
 passa formaten som de neurala nätverken kräver.
 
-Det gör vi genom att göra om våra labels till en one hot encoding av våra labels, och platta ut vatriser till rader
+Det gör vi genom att göra om våra labels till en one hot encoding av våra labels, och platta ut matriser till rader
 
 ```{r reshape_data}
 # One hot encoding
@@ -145,20 +149,14 @@ model_nn <-
 
     # Vårt första hidden layer, kräver att vi har rätt input dimensioner
     layer_dense(
-      units = 64, #Antal noder
+      units = 16, #Antal noder
       input_shape = ncol(train_images_flat),
       activation = 'relu' #Aktiveringsfunktion
     ) %>%
 
     # Ett till lager
     layer_dense(
-      units = 32, #Antal noder
-      activation = 'relu' #Aktiveringsfunktion
-    ) %>%
-
-    # Ett till lager
-    layer_dense(
-      units = 32, #Antal noder
+      units = 16, #Antal noder
       activation = 'relu' #Aktiveringsfunktion
     ) %>%
 
@@ -223,7 +221,7 @@ history
 ```
 
 ### Slutgiltig evaluering och stickprov
-Nu är modellen tränad och om vi är nöjda med vår performance (Med en validation accuracy på 95-96 % är det ändå ganska bra!) så kan vi titta på
+Nu är modellen tränad och om vi är nöjda med vår performance (Med en validation accuracy på 86-87 % är det ändå ganska bra!) så kan vi titta på
 om det verkar ha generaliserats till vårt test-dataset.
 
 ```{r}
