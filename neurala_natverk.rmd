@@ -211,6 +211,10 @@ history <- model_nn %>%
     validation_split = 0.2,
     callbacks = callback_tensorboard('logs/run_a')
   )
+
+# Det är bra praxis att spara sina modeller så att man inte tränar många gånger i onödan
+model_nn %>% save_model_hdf5('models/model_nn.h5')
+
 ```
 
 ```{r echo=FALSE}
