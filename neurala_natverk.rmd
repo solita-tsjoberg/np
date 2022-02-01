@@ -100,7 +100,7 @@ rand_num <- sample(1:dim(train_images)[1], 1) #Sampla siffra mellan 1 och antale
 
 #Skriv ut en förklaring
 cat(
-  'Bild nummer', number_to_display,
+  'Bild nummer', rand_num,
   'som föreställer en/ett',
   fashion_labels %>%
     filter(lab == train_labels[rand_num]) %>%
