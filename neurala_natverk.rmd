@@ -183,8 +183,8 @@ model_nn %>%
   compile(
     loss = 'categorical_crossentropy', #Motsvarar binary cross entropy för multi-class
     optimizer = optimizer_adam(), # Här använder vi en lite mer avancerad optimerare än
-                                  # bara SGD eftersom träningen går mycket snabbare.
-    metrics = c('accuracy', metric_precision(), metric_recall()) #
+                                  # bara SGD eftersom träningen går MYCKET snabbare.
+    metrics = c('accuracy')
   )
 
 ```
@@ -199,6 +199,7 @@ I den här implementationen så väljs valideringssetet från slutet av träning
 
 Nu är det bara att köra vår modell med fit funktionen, under tiden den kör så kan vi se hur
 vår loss och våra mätetal/metrics utvecklas under träningen.
+
 ```{r}
 history <- model_nn %>%
   fit(
@@ -225,9 +226,19 @@ Nu är modellen tränad och om vi är nöjda med vår performance (Med en valida
 om det verkar ha generaliserats till vårt test-dataset.
 
 ```{r}
-score <- model_nn %>% evaluate(test_images_flat, test_labels_cat, callbacks = callback_tensorboard('logs/run_a'))
-score
+score <- model_nn %>% evaluate(
+  test_images_flat,
+  test_labels_cat,
+  callbacks = callback_tensorboard('logs/run_a')
+)
 
+score
+```
+
+Fortfarande kring ca 86 %!
+Hur ser det ut om vi tar stickprov i vårt testset?
+
+```{r}
 # skapa predictioner på test data setet
 predictions <- model_nn %>% predict(test_images_flat)
 colnames(predictions) <- 0:9
@@ -246,12 +257,7 @@ test_labels_real_pred <- tibble(image_index = 1:nrow(test_labels), test_labels, 
   left_join(fashion_labels, by = c('test_labels' = 'lab')) %>%
   left_join(fashion_labels, by = c('pred_num' = 'lab')) %>%
   rename(real_description = description.x, pred_description = description.y)
-
-test_labels_real_pred
 ```
-
-Fortfarande kring ca 95 %!
-Hur ser det ut om vi tar stickprov i vårt testset?
 
 ```{r}
 rand_num <- sample(1:nrow(test_labels_real_pred), size = 1)
@@ -269,6 +275,9 @@ cat(
 plot_mnist(test_images[rand_num, ,])
 ```
 
+Chunken ovan går att köra många gånger för att se flera slumpade exempel (från testsetet)
+
+
 Och i tabellformat:
 ```{r}
 # 10 slumpmässigt valda testblider, deras sanna och predicerade labels, och den predicerade säkerheten det neurala nätverket hade.
@@ -279,13 +288,18 @@ För att det är intressant kan vi också titta på några av de exemplen där m
 
 ```{r}
 random_failures <- test_labels_real_pred %>%
-  filter(test_labels != pred_num) %>%
+  filter(real_description != pred_description) %>%
   slice_sample(n = 5)
-
-random_failures
 
 random_failures %>%
   head(1) %>%
   pull(image_index) %>%
   { plot_mnist(test_images[., ,]) }
+```
+
+i Tabellformat:
+```{r}
+test_labels_real_pred %>%
+  filter(real_description != pred_description) %>%
+  slice_sample(n = 10)
 ```
