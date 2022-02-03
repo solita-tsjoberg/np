@@ -227,6 +227,11 @@ Nu är modellen tränad och om vi är nöjda med vår performance (Med en valida
 om det verkar ha generaliserats till vårt test-dataset.
 
 ```{r}
+# Om
+if(!exists("model_nn")) {
+  model_nn <- load_model_hdf5('models/model_nn.h5')
+}
+
 score <- model_nn %>% evaluate(
   test_images_flat,
   test_labels_cat,
