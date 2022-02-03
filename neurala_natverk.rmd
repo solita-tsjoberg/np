@@ -201,7 +201,7 @@ Nu är det bara att köra vår modell med fit funktionen, under tiden den kör s
 vår loss och våra mätetal/metrics utvecklas under träningen.
 
 ```{r}
-history <- model_nn %>%
+train_history <- model_nn %>%
   fit(
     x = train_images_flat,
     y = train_labels_cat,
@@ -217,8 +217,9 @@ model_nn %>% save_model_hdf5('models/model_nn.h5')
 ```
 
 ```{r echo=FALSE}
-history %>% plot()
-history
+train_history %>% plot()
+train_history
+
 ```
 
 ### Slutgiltig evaluering och stickprov
